@@ -19,7 +19,7 @@ type CrawlerBuilder interface {
 func NewCrawlerBuilder(url string) CrawlerBuilder {
 	return &crawlerBuilderImpl { 
 		startUrl: url,
-		requestFactory: http.NewRequest,
+		requestFactory: http.Get,
 	}
 }
 
