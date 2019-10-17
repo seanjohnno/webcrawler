@@ -8,25 +8,7 @@ import (
 	"strings"
 )
 
-func Test_WebRequestIsSentToCorrectStartUrl(t *testing.T) {
-	url := "http://www.test.com/content.html"
-	expectedOutput := "Hello World"
-	crawler, mockHttp, handler := setup(url, map[string]string {
-		url: expectedOutput,
-	})
-	crawler.Start()
-
-	if mockHttp.GetUrlCallCount(url) != 1 {
-		t.Errorf("Request. Expected single call to %s", url)
-	}
-
-	outputContent := handler.GetContentFor(url)
-	if outputContent != expectedOutput  {
-		t.Errorf("Handler. Expected %s but got %s", expectedOutput, outputContent)
-	}
-}
-
-func Test_NestedLinksAreFetched(t *testing.T) {
+func Test_LinksAreFetched_AndOnlyOnce(t *testing.T) {
 	startUrl := "http://www.test.com/content.html"
 	startContent := strings.Join([]string {
 		"<body>",
@@ -40,7 +22,8 @@ func Test_NestedLinksAreFetched(t *testing.T) {
 		startUrl: startContent,
 		"http://www.test.com/page1.html": "Page 1",
 		"http://www.test.com/page2.html": "Page 2",
-		"http://www.test.com/subdir/page3.html": "Page 3",
+		"http://www.test.com/subdir/page3.html": "<a href='../page4.html'>Page 4</a>",
+		"http://www.test.com/page4.html": "<a href='/page1.html'>Page 1</a>",
 	}
 	
 	crawler, request, handler := setup(startUrl, expectedRequestResponse)

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"regexp"
 	"strings"
+	"net/url"
 )
 
 type webcrawlerImpl struct {
@@ -13,9 +14,15 @@ type webcrawlerImpl struct {
 	requestFilter func(Crawler, int, string) bool
 	resultHandler func(Crawler, string, []byte)
 	maxDepth int
+
+	fetchedUrls []string
 }
 
 func (self *webcrawlerImpl) Start() {
+	if self.fetchedUrls == nil {
+		self.fetchedUrls = make([]string, 0)	
+	}
+	
 	self.getResource(self.startUrl)
 }
 
@@ -24,6 +31,11 @@ func (self *webcrawlerImpl) Stop() {
 }
 
 func (self *webcrawlerImpl) getResource(url string) {
+	if self.isAlreadyFetched(url) {
+		return
+	}
+	self.fetchedUrls = append(self.fetchedUrls, url)
+
 	// Test request filter
 	response, err := self.requestFactory(url)
 	if err != nil {
@@ -58,8 +70,26 @@ func (self *webcrawlerImpl) recurse(content string, currentUrl string) {
 }
 
 func (self *webcrawlerImpl) getFullUrlPath(capturedLink string, currentUrl string) string {
-	
-	return currentUrl + capturedLink
+	current, err := url.Parse(currentUrl)
+	if err != nil {
+		return ""
+	}
+
+	toUrl, err := current.Parse(capturedLink)
+	if err != nil {
+		return ""
+	}
+
+	return toUrl.String()
+}
+
+func (self *webcrawlerImpl) isAlreadyFetched(url string) bool {
+	for _, v := range self.fetchedUrls {
+		if v == url {
+			return true
+		}
+	}	
+	return false
 }
 
 func bytesToString(content []byte) string {
