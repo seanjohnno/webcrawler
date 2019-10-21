@@ -73,8 +73,21 @@ func (self *webcrawlerImpl) shouldFilter(url string) bool {
 }
 
 func (self *webcrawlerImpl) recurse(content string, currentUrl string, depth int) {
-	hrefRegex := regexp.MustCompile("href=['\"](.*)['\"]")
-	matches := hrefRegex.FindAllStringSubmatch(content, -1)
+	hrefRegex := regexp.MustCompile("<a.*?href=['\"](.*?)['\"].*?>")
+	self.recurseWith(hrefRegex, content, currentUrl, depth)
+
+	stylesheetRegex := regexp.MustCompile("<link.*?href=['\"](.*?)['\"].*?>")
+	self.recurseWith(stylesheetRegex, content, currentUrl, depth)
+
+	jsRegex := regexp.MustCompile("<script.*?src=['\"](.*?)['\"].*?>")
+	self.recurseWith(jsRegex, content, currentUrl, depth)	
+
+	urlRegex := regexp.MustCompile("url\\(['\"]?(.*?)['\"]?\\)")
+	self.recurseWith(urlRegex, content, currentUrl, depth)	
+}
+
+func (self *webcrawlerImpl) recurseWith(regex *regexp.Regexp, content string, currentUrl string, depth int) {
+	matches := regex.FindAllStringSubmatch(content, -1)
 	for _, match := range matches {
 		if len(match) > 1 && len(match[1]) > 0 {
 			capturedLink := match[1]

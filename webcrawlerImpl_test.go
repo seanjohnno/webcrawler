@@ -18,11 +18,12 @@ var indexPageContent = strings.Join([]string {
 	},"\n")
 
 /*
-func Test_FileOutputHandler(t *testing.T) {
-	t.Error("Untested")
-}
+// fs save
+// use mime to search files for correct things i.e. only recurse html/css and css should just be url
+// Errors during fetching
+// Link rewriting, resources on another server
 
-func Test_CssAndJsLinksFetched(t *testing.T)  {
+func Test_FileOutputHandler(t *testing.T) {
 	t.Error("Untested")
 }
 
@@ -30,6 +31,45 @@ func Test_FontsFetched(t *testing.T) {
 	t.Error("Untested")
 }
 */
+
+func Test_CssJsFontLinksFetched(t *testing.T)  {
+	withJsAndCss := strings.Join([]string {
+			"<body>",
+			"<script src='/somescript.js'/script>",
+			"<link href='/somestyling.css' rel='stylessheet'>",
+			"<script src=\"/somescript2.js\"></script>",
+			"<link href=\"/somestyling2.css\" rel='stylessheet'>",
+			"<a href='/subdir/page3.html'>Page 3</a>",
+			"<a href=\"/page4.html\">Page 4</a>",
+			"</body>",
+		},"\n")
+	styling1 := strings.Join([]string {
+			"@font-face {",
+			"	font-family: Lato;",
+			"	src: url(/assets/fonts/Lato.woff2) format('woff2'),",
+	        "	 url(/assets/fonts/Lato.woff) format('woff');",
+			"}",
+		},"\n")
+	styling2 := ".header {  background: url(\"/assets/header.png\"); }"  
+	expectedRequestResponse := map[string]string {
+		indexPageUrl: withJsAndCss,
+		"http://www.test.com/somescript.js": "someJavascript() { ... }",
+		"http://www.test.com/somestyling.css": styling1,
+		"http://www.test.com/somescript2.js": "someJavascript2() { ... }",
+		"http://www.test.com/somestyling2.css": styling2,
+		"http://www.test.com/subdir/page3.html": "Page 3 content",
+		"http://www.test.com/page4.html": "Page 4 content",
+		"http://www.test.com/assets/fonts/Lato.woff2": "woff woff 2!",
+		"http://www.test.com/assets/fonts/Lato.woff": "woff woff!",
+		"http://www.test.com/assets/header.png": "some image content",
+	}
+	mockHttpFactory := createMockHttpFactoryWith(expectedRequestResponse)
+	crawlerBuilder := createBuilderWith(mockHttpFactory)
+
+	mockOutputHandler := startCrawler(crawlerBuilder)
+		
+	test(mockOutputHandler, mockHttpFactory, expectedRequestResponse, t)
+}
 
 func Test_Stop(t *testing.T) {
 	expectedRequestResponse := map[string]string {
