@@ -78,24 +78,28 @@ func (self *webcrawlerImpl) recurse(content string, currentUrl string, depth int
 	for _, match := range matches {
 		if len(match) > 1 && len(match[1]) > 0 {
 			capturedLink := match[1]
-			capturedLink = self.getFullUrlPath(capturedLink, currentUrl)
+			capturedLink, err := self.getFullUrlPath(capturedLink, currentUrl)
+			if err != nil {
+				// Test
+				return
+			}
 			self.getResource(capturedLink, depth)
 		}
 	}	
 }
 
-func (self *webcrawlerImpl) getFullUrlPath(capturedLink string, currentUrl string) string {
+func (self *webcrawlerImpl) getFullUrlPath(capturedLink string, currentUrl string) (string, error) {
 	current, err := url.Parse(currentUrl)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	toUrl, err := current.Parse(capturedLink)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
-	return toUrl.String()
+	return toUrl.String(), nil
 }
 
 func (self *webcrawlerImpl) isAlreadyFetched(url string) bool {
