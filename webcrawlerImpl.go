@@ -16,6 +16,7 @@ type webcrawlerImpl struct {
 	maxDepth int
 
 	fetchedUrls []string
+	stopped bool
 }
 
 func (self *webcrawlerImpl) Start() {
@@ -23,14 +24,22 @@ func (self *webcrawlerImpl) Start() {
 		self.fetchedUrls = make([]string, 0)	
 	}
 	
-	self.getResource(self.startUrl)
+	self.getResource(self.startUrl, 0)
 }
 
 func (self *webcrawlerImpl) Stop() {
-	// Test stop before end
+	self.stopped = true
 }
 
-func (self *webcrawlerImpl) getResource(url string) {
+func (self *webcrawlerImpl) getResource(url string, depth int) {
+	if self.stopped == true {
+		return
+	}
+
+	if self.requestFilter != nil && !self.requestFilter(self, 0, url) {
+		return
+	}
+
 	if self.isAlreadyFetched(url) {
 		return
 	}
@@ -54,17 +63,20 @@ func (self *webcrawlerImpl) getResource(url string) {
 		return
 	}
 	self.resultHandler(self, url, content)
-	self.recurse(bytesToString(content), url)
+
+	if self.maxDepth == -1 || depth + 1 <= self.maxDepth {
+		self.recurse(bytesToString(content), url, depth + 1)	
+	}
 }
 
-func (self *webcrawlerImpl) recurse(content string, currentUrl string) {
+func (self *webcrawlerImpl) recurse(content string, currentUrl string, depth int) {
 	hrefRegex := regexp.MustCompile("href=['\"](.*)['\"]")
 	matches := hrefRegex.FindAllStringSubmatch(content, -1)
 	for _, match := range matches {
 		if len(match) > 1 && len(match[1]) > 0 {
 			capturedLink := match[1]
 			capturedLink = self.getFullUrlPath(capturedLink, currentUrl)
-			self.getResource(capturedLink)
+			self.getResource(capturedLink, depth)
 		}
 	}	
 }

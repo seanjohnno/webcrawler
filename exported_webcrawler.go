@@ -20,6 +20,6 @@ func NewCrawlerBuilder(url string) CrawlerBuilder {
 	return &crawlerBuilderImpl { 
 		startUrl: url,
 		requestFactory: http.Get,
+		maxDepth: -1,
 	}
 }
-
