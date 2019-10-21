@@ -17,6 +17,7 @@ var indexPageContent = strings.Join([]string {
 		"</body>",
 	},"\n")
 
+/*
 func Test_FileOutputHandler(t *testing.T) {
 	t.Error("Untested")
 }
@@ -28,6 +29,7 @@ func Test_CssAndJsLinksFetched(t *testing.T)  {
 func Test_FontsFetched(t *testing.T) {
 	t.Error("Untested")
 }
+*/
 
 func Test_Stop(t *testing.T) {
 	expectedRequestResponse := map[string]string {

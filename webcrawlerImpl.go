@@ -8,6 +8,8 @@ import (
 	"net/url"
 )
 
+var startDepth int = 0
+
 type webcrawlerImpl struct {
 	startUrl string
 	requestFactory func(target string) (*http.Response, error)
@@ -24,7 +26,7 @@ func (self *webcrawlerImpl) Start() {
 		self.fetchedUrls = make([]string, 0)	
 	}
 	
-	self.getResource(self.startUrl, 0)
+	self.getResource(self.startUrl, startDepth)
 }
 
 func (self *webcrawlerImpl) Stop() {
@@ -32,20 +34,10 @@ func (self *webcrawlerImpl) Stop() {
 }
 
 func (self *webcrawlerImpl) getResource(url string, depth int) {
-	if self.stopped == true {
+	if self.stopped || self.shouldFilter(url) || self.isAlreadyFetched(url) {	
 		return
 	}
-
-	if self.requestFilter != nil && !self.requestFilter(self, 0, url) {
-		return
-	}
-
-	if self.isAlreadyFetched(url) {
-		return
-	}
-	self.fetchedUrls = append(self.fetchedUrls, url)
-
-	// Test request filter
+	
 	response, err := self.requestFactory(url)
 	if err != nil {
 		// Test
@@ -62,11 +54,22 @@ func (self *webcrawlerImpl) getResource(url string, depth int) {
 		// Test
 		return
 	}
+	
+	self.fetchedUrls = append(self.fetchedUrls, url)	
 	self.resultHandler(self, url, content)
 
-	if self.maxDepth == -1 || depth + 1 <= self.maxDepth {
-		self.recurse(bytesToString(content), url, depth + 1)	
+	nextDepth := depth + 1
+	if !self.exceedsMaxDepth(nextDepth) {
+		self.recurse(bytesToString(content), url, nextDepth)	
 	}
+}
+
+func (self *webcrawlerImpl) exceedsMaxDepth(depth int) bool {
+	return !(self.maxDepth == -1 || depth  <= self.maxDepth)
+} 
+
+func (self *webcrawlerImpl) shouldFilter(url string) bool {
+	return self.requestFilter != nil && !self.requestFilter(self, 0, url)
 }
 
 func (self *webcrawlerImpl) recurse(content string, currentUrl string, depth int) {
