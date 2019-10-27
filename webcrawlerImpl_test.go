@@ -2,10 +2,11 @@ package webcrawler
 
 import (
 	"testing"
-	"io/ioutil"
-	"bytes"
 	"net/http"
 	"strings"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
 var indexPageUrl = "http://www.test.com/content.html" 
@@ -17,9 +18,9 @@ var indexPageContent = strings.Join([]string {
 		"</body>",
 	},"\n")
 
+
+
 /*
-// fs save
-// use mime to search files for correct things i.e. only recurse html/css and css should just be url
 // Errors during fetching
 // Link rewriting, resources on another server
 
@@ -31,6 +32,54 @@ func Test_FontsFetched(t *testing.T) {
 	t.Error("Untested")
 }
 */
+
+func Test_FilesSavedInCorrectStructure(t *testing.T) {
+	tmpDir, err := ioutil.TempDir("", "webcrawlerTest")
+	if err != nil {
+		t.Errorf("Error!! Unable to create temp directory for test. %s", err)
+		return
+	}
+
+	expectedRequestResponse := map[string]string {
+		indexPageUrl: indexPageContent,
+		"http://www.test.com/page1.html": "Page 1",
+		"http://www.test.com/page2.html": "Page 2",
+		"http://www.test.com/subdir/page3.html": "<a href='../page4.html'>Page 4</a>",
+		"http://www.test.com/page4.html": "<a href='/page1.html'>Page 1</a>",
+	}
+	mockHttpFactory := createMockHttpFactoryWith(expectedRequestResponse)
+
+	createBuilderWith(mockHttpFactory).
+		BuildWithOutputDestination(tmpDir).
+		Start()
+				
+	expectedFiles := make([]string, 0, len(expectedRequestResponse))
+	for url, expectedContent := range expectedRequestResponse {
+		filename := tmpDir + strings.TrimPrefix(url, "http://www.test.com")
+		expectedFiles = append(expectedFiles, filename)
+		
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			t.Errorf("Couldn't find file %s", filename)
+		} else {
+			bytes, _ := ioutil.ReadFile(filename)
+			strContent := bytesToString(bytes)
+
+			if strContent != expectedContent {
+				t.Errorf("In file %s, expecting content:\n%s\n...but got:\n%s", filename, expectedContent, strContent)		
+			}
+		}
+	}
+
+	filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
+		filename := strings.TrimPrefix(path, tmpDir)
+		if !info.IsDir() && !contains(expectedFiles, filename) {
+			t.Errorf("Found unexpected file: %s", tmpDir + filename)
+		}
+		return nil
+	})
+
+	os.Remove(tmpDir)	
+}
 
 func Test_CssJsFontLinksFetched(t *testing.T)  {
 	withJsAndCss := strings.Join([]string {
@@ -141,7 +190,7 @@ func Test_LinksAreFetched_AndOnlyOnce(t *testing.T) {
 func createMockHttpFactoryWith(expectedRequestResponse map[string]string) *mockHttpFactory {
 	urlsToHttpResponses := make(map[string]*http.Response)
 	for k, v := range expectedRequestResponse {
-		urlsToHttpResponses[k] = createHttpResponse(v)
+		urlsToHttpResponses[k] = NewMockResponse(v, MimeByFilename(k))
 	}
 			
 	return &mockHttpFactory {
@@ -185,10 +234,17 @@ func test(mockOutputHandler *mockOutputHandler, httpFactory *mockHttpFactory, ur
 	}
 }
 
-func createHttpResponse(response string) *http.Response {
-	return &http.Response {
-			StatusCode: 200,
-			Body: ioutil.NopCloser(
-			bytes.NewReader([]byte(response))),
+func bytesToString(bytes []byte) string {
+	strBuilder := &strings.Builder{}
+	strBuilder.Write(bytes)
+	return strBuilder.String()	
+}
+
+func contains(strArr []string, find string) bool {
+	for _, v := range strArr {
+		if v == find {
+			return true
+		}
 	}
+	return false
 }

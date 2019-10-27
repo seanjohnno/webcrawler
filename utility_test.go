@@ -2,8 +2,11 @@ package webcrawler
 
 import (
 	"net/http"
+	"net/url"
 	"errors"
 	"strings"
+	"bytes"
+	"io/ioutil"
 )
 
 type mockHttpFactory struct {
@@ -17,7 +20,14 @@ func (self *mockHttpFactory) Get(targetUrl string) (*http.Response, error) {
 	}
 
 	self.requestedUrls = append(self.requestedUrls, targetUrl)
-	return self.urlsToResponses[targetUrl], nil
+
+	requestUrl, _ := url.Parse(targetUrl)
+	response := self.urlsToResponses[targetUrl]
+	response.Request = &http.Request {
+		URL: requestUrl,
+	}
+
+	return response, nil
 }
 
 func (self *mockHttpFactory) GetUrlCallCount(targetUrl string) int {
@@ -28,6 +38,31 @@ func (self *mockHttpFactory) GetUrlCallCount(targetUrl string) int {
 		}
 	}
 	return count
+}
+
+func NewMockResponse(body string, mimeType string) *http.Response {
+	return &http.Response {
+			StatusCode: 200,
+			Body: ioutil.NopCloser(
+				bytes.NewReader([]byte(body))),
+			Header: http.Header {
+				"contentType": []string { mimeType },
+			},
+	}
+}
+
+func MimeByFilename(filename string) string {
+	if strings.HasSuffix(filename, ".html") {
+		return "text/html"
+	} else if strings.HasSuffix(filename, ".js") {
+		return "application/javascript"
+	} else if strings.HasSuffix(filename, ".css") {
+		return "text/css"
+	} else if strings.HasSuffix(filename, ".png") {
+		return "image/png"
+	} else {
+		return "unknown"
+	}
 }
 
 type mockOutputHandler struct {

@@ -3,12 +3,10 @@ package webcrawler
 import (
 	"net/http"
 	"io/ioutil"
-	"regexp"
-	"strings"
-	"net/url"
+	"github.com/seanjohnno/webcrawler/linkscanner"
 )
 
-var startDepth int = 0
+const startDepth int = 0
 
 type webcrawlerImpl struct {
 	startUrl string
@@ -16,7 +14,7 @@ type webcrawlerImpl struct {
 	requestFilter func(Crawler, int, string) bool
 	resultHandler func(Crawler, string, []byte)
 	maxDepth int
-
+	
 	fetchedUrls []string
 	stopped bool
 }
@@ -39,18 +37,13 @@ func (self *webcrawlerImpl) getResource(url string, depth int) {
 	}
 	
 	response, err := self.requestFactory(url)
-	if err != nil {
-		// Test
-		return
-	}
-
-	if response == nil {
+	if err != nil || response == nil {
 		// Test
 		return
 	}
 
 	content, err := ioutil.ReadAll(response.Body)
-	if err != nil {
+	if err != nil || content == nil {
 		// Test
 		return
 	}
@@ -60,7 +53,14 @@ func (self *webcrawlerImpl) getResource(url string, depth int) {
 
 	nextDepth := depth + 1
 	if !self.exceedsMaxDepth(nextDepth) {
-		self.recurse(bytesToString(content), url, nextDepth)	
+		self.recurse(content, response, nextDepth)	
+	}
+}
+
+func (self *webcrawlerImpl) recurse(responseBody []byte, response *http.Response, depth int) {
+	urls := linkscanner.Scan(responseBody, response)
+	for _, url :=  range urls {
+		self.getResource(url.String(), depth)
 	}
 }
 
@@ -72,49 +72,6 @@ func (self *webcrawlerImpl) shouldFilter(url string) bool {
 	return self.requestFilter != nil && !self.requestFilter(self, 0, url)
 }
 
-func (self *webcrawlerImpl) recurse(content string, currentUrl string, depth int) {
-	hrefRegex := regexp.MustCompile("<a.*?href=['\"](.*?)['\"].*?>")
-	self.recurseWith(hrefRegex, content, currentUrl, depth)
-
-	stylesheetRegex := regexp.MustCompile("<link.*?href=['\"](.*?)['\"].*?>")
-	self.recurseWith(stylesheetRegex, content, currentUrl, depth)
-
-	jsRegex := regexp.MustCompile("<script.*?src=['\"](.*?)['\"].*?>")
-	self.recurseWith(jsRegex, content, currentUrl, depth)	
-
-	urlRegex := regexp.MustCompile("url\\(['\"]?(.*?)['\"]?\\)")
-	self.recurseWith(urlRegex, content, currentUrl, depth)	
-}
-
-func (self *webcrawlerImpl) recurseWith(regex *regexp.Regexp, content string, currentUrl string, depth int) {
-	matches := regex.FindAllStringSubmatch(content, -1)
-	for _, match := range matches {
-		if len(match) > 1 && len(match[1]) > 0 {
-			capturedLink := match[1]
-			capturedLink, err := self.getFullUrlPath(capturedLink, currentUrl)
-			if err != nil {
-				// Test
-				return
-			}
-			self.getResource(capturedLink, depth)
-		}
-	}	
-}
-
-func (self *webcrawlerImpl) getFullUrlPath(capturedLink string, currentUrl string) (string, error) {
-	current, err := url.Parse(currentUrl)
-	if err != nil {
-		return "", err
-	}
-
-	toUrl, err := current.Parse(capturedLink)
-	if err != nil {
-		return "", err
-	}
-
-	return toUrl.String(), nil
-}
-
 func (self *webcrawlerImpl) isAlreadyFetched(url string) bool {
 	for _, v := range self.fetchedUrls {
 		if v == url {
@@ -122,10 +79,4 @@ func (self *webcrawlerImpl) isAlreadyFetched(url string) bool {
 		}
 	}	
 	return false
-}
-
-func bytesToString(content []byte) string {
-	strBuilder := &strings.Builder {}
-	strBuilder.Write(content)
-	return strBuilder.String()
 }

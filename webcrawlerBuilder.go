@@ -8,7 +8,8 @@ type fileOutputHandler struct {
 	outputDestination string
 }
 
-func (self *fileOutputHandler) ResultHandler(Crawler, string, []byte) {
+func (self *fileOutputHandler) ResultHandler(crawler Crawler, url string, content []byte) {
+	
 }
 
 type crawlerBuilderImpl struct {
