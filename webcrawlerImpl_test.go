@@ -52,7 +52,7 @@ func Test_FilesSavedInCorrectStructure(t *testing.T) {
 	createBuilderWith(mockHttpFactory).
 		BuildWithOutputDestination(tmpDir).
 		Start()
-				
+
 	expectedFiles := make([]string, 0, len(expectedRequestResponse))
 	for url, expectedContent := range expectedRequestResponse {
 		filename := tmpDir + strings.TrimPrefix(url, "http://www.test.com")
@@ -71,14 +71,27 @@ func Test_FilesSavedInCorrectStructure(t *testing.T) {
 	}
 
 	filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
-		filename := strings.TrimPrefix(path, tmpDir)
+		filename := tmpDir + strings.TrimPrefix(path, tmpDir)
 		if !info.IsDir() && !contains(expectedFiles, filename) {
-			t.Errorf("Found unexpected file: %s", tmpDir + filename)
+			t.Errorf("Found unexpected file: %s", filename)
 		}
 		return nil
 	})
 
 	os.Remove(tmpDir)	
+}
+
+func AssertFileWithContentExists(filename string, expectedContent string, t *testing.T) {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		t.Errorf("Couldn't find file %s", filename)
+	} else {
+		bytes, _ := ioutil.ReadFile(filename)
+		strContent := bytesToString(bytes)
+
+		if strContent != expectedContent {
+			t.Errorf("In file %s, expecting content:\n%s\n...but got:\n%s", filename, expectedContent, strContent)		
+		}
+	}
 }
 
 func Test_CssJsFontLinksFetched(t *testing.T)  {

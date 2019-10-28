@@ -2,14 +2,30 @@ package webcrawler
 
 import (
 	"net/http"
+	"net/url"
+	"io/ioutil"
+	"path"
+	"os"
 )
 
 type fileOutputHandler struct {
 	outputDestination string
 }
 
-func (self *fileOutputHandler) ResultHandler(crawler Crawler, url string, content []byte) {
-	
+func (self *fileOutputHandler) ResultHandler(crawler Crawler, rscUrl string, content []byte) {
+	if parsedUrl, err := url.Parse(rscUrl); err == nil {
+		writePath := self.outputDestination + parsedUrl.Path
+		
+		parentDir := path.Dir(writePath)
+		err := os.MkdirAll(parentDir, os.ModePerm)	
+		if err != nil {
+			// Test	
+		}
+		
+		ioutil.WriteFile(writePath, content, 0660)
+	} else {
+		// Test
+	}	
 }
 
 type crawlerBuilderImpl struct {
