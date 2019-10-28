@@ -35,4 +35,5 @@ NewCrawlerBuilder("https://urltocrawl.com").
 ## *TODO
 * Error handling
 * Link rewriting for resources not on same domain
+* Add ability to use as command line utility as well as go lib
 * Concurrency
