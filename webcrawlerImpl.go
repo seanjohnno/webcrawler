@@ -58,9 +58,13 @@ func (self *webcrawlerImpl) getResource(url string, depth int) {
 }
 
 func (self *webcrawlerImpl) recurse(responseBody []byte, response *http.Response, depth int) {
-	urls := linkscanner.Scan(responseBody, response)
-	for _, url :=  range urls {
-		self.getResource(url.String(), depth)
+	scanResults := linkscanner.Scan(responseBody, response)
+	for _, result :=  range scanResults {
+		if result.Error == nil {
+			self.getResource(result.Url.String(), depth)
+		} else {
+			// Test			
+		}
 	}
 }
 

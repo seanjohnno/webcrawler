@@ -7,7 +7,12 @@ import (
 	"strings"
 	)
 
-func Scan(responseBody []byte, response *http.Response) ([]*url.URL) {
+type ScanResult struct {
+	Url *url.URL
+	Error error
+}
+
+func Scan(responseBody []byte, response *http.Response) []*ScanResult {
 	strResponseBody := bytesToString(responseBody)
 	mimeType := strings.ToLower(mimeFromResponse(response))
 
@@ -25,7 +30,7 @@ func Scan(responseBody []byte, response *http.Response) ([]*url.URL) {
 		}
 	}
 
-	urls := make([]*url.URL, 0)	
+	urls := make([]*ScanResult, 0)	
 	for _, regexp := range regexps {
 		capturedUrls := scanWith(regexp, strResponseBody, response.Request.URL)
 		urls = append(urls, capturedUrls...)
@@ -33,18 +38,18 @@ func Scan(responseBody []byte, response *http.Response) ([]*url.URL) {
 	return urls
 }
 
-func scanWith(regex *regexp.Regexp, content string, currentUrl *url.URL) ([]*url.URL) {
-	urls := make([]*url.URL, 0)
+func scanWith(regex *regexp.Regexp, content string, currentUrl *url.URL) []*ScanResult {
+	urls := make([]*ScanResult, 0)
 	
 	matches := regex.FindAllStringSubmatch(content, -1)
 	for _, match := range matches {
 		if len(match) > 1 && len(match[1]) > 0 {
 			capturedLink := match[1]
 			combinedUrl, err := currentUrl.Parse(capturedLink)
-			if err != nil {
-				// Test / log?
-			}
-			urls = append(urls, combinedUrl)		
+			urls = append(urls, &ScanResult {
+				Url: combinedUrl,
+				Error: err,
+			})		
 		}
 	}
 	return urls	
