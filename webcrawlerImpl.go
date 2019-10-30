@@ -11,8 +11,9 @@ const startDepth int = 0
 type webcrawlerImpl struct {
 	startUrl string
 	requestFactory func(target string) (*http.Response, error)
-	requestFilter func(Crawler, int, string) bool
-	resultHandler func(Crawler, string, []byte)
+	requestFilter func(crawler Crawler, depth int, url string) bool
+	errorHandler func(crawler Crawler, err error, url string)
+	resultHandler func(crawler Crawler, url string, content []byte)
 	maxDepth int
 	
 	fetchedUrls []string
@@ -37,14 +38,14 @@ func (self *webcrawlerImpl) getResource(url string, depth int) {
 	}
 	
 	response, err := self.requestFactory(url)
-	if err != nil || response == nil {
-		// Test
+	if err != nil {
+		self.errorHandler(self, err, url)
 		return
 	}
 
 	content, err := ioutil.ReadAll(response.Body)
-	if err != nil || content == nil {
-		// Test
+	if err != nil {
+		self.errorHandler(self, err, url)
 		return
 	}
 	

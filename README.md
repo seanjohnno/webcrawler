@@ -34,6 +34,8 @@ NewCrawlerBuilder("https://urltocrawl.com").
 
 ## *TODO
 * Error handling
+* Don't read all bytes into memory if it doesn
+t need to. Perhaps splitting mime logic out from linkscanner i.e. shouldScanForLinks
 * Link rewriting for resources not on same domain
 * Add ability to use as command line utility as well as go lib
 * Concurrency

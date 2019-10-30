@@ -18,20 +18,17 @@ var indexPageContent = strings.Join([]string {
 		"</body>",
 	},"\n")
 
-
-
-/*
-// Errors during fetching
-// Link rewriting, resources on another server
-
-func Test_FileOutputHandler(t *testing.T) {
-	t.Error("Untested")
+func Test_ErrorHandlerIsCalledOnHttpError(t *testing.T) {
+	testWithHttpError(ErrorGet, t)
 }
 
-func Test_FontsFetched(t *testing.T) {
-	t.Error("Untested")
+func Test_ErrorHandlerIsCalledOnReadingResponseBody(t *testing.T) {
+	testWithHttpError(ErrorRead, t)
 }
-*/
+
+func Test_ErrorHandlerIsCalledOnBadUrl(t *testing.T) {
+	// TODO
+}
 
 func Test_FilesSavedInCorrectStructure(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "webcrawlerTest")
@@ -79,19 +76,6 @@ func Test_FilesSavedInCorrectStructure(t *testing.T) {
 	})
 
 	os.Remove(tmpDir)	
-}
-
-func AssertFileWithContentExists(filename string, expectedContent string, t *testing.T) {
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		t.Errorf("Couldn't find file %s", filename)
-	} else {
-		bytes, _ := ioutil.ReadFile(filename)
-		strContent := bytesToString(bytes)
-
-		if strContent != expectedContent {
-			t.Errorf("In file %s, expecting content:\n%s\n...but got:\n%s", filename, expectedContent, strContent)		
-		}
-	}
 }
 
 func Test_CssJsFontLinksFetched(t *testing.T)  {
@@ -247,6 +231,28 @@ func test(mockOutputHandler *mockOutputHandler, httpFactory *mockHttpFactory, ur
 	}
 }
 
+func testWithHttpError(httpError func(targetUrl string) (*http.Response, error), t *testing.T) {
+	var savedError error = nil
+	var errUrl string = ""
+	crawlerBuilder, _ := NewCrawlerBuilder(indexPageUrl).
+		WithErrorHandler(func(crawler Crawler, err error, url string) {
+			savedError = err
+			errUrl = url
+		}).
+		(*crawlerBuilderImpl)
+	crawlerBuilder.requestFactory = httpError
+	
+	startCrawler(crawlerBuilder)
+
+	if savedError == nil {
+		t.Error("Expected to received error")
+	}
+		
+	if errUrl != indexPageUrl {
+		t.Errorf("Expected to see url %s but was %s", indexPageUrl, errUrl)	
+	}	
+}
+
 func bytesToString(bytes []byte) string {
 	strBuilder := &strings.Builder{}
 	strBuilder.Write(bytes)
@@ -260,4 +266,17 @@ func contains(strArr []string, find string) bool {
 		}
 	}
 	return false
+}
+
+func AssertFileWithContentExists(filename string, expectedContent string, t *testing.T) {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		t.Errorf("Couldn't find file %s", filename)
+	} else {
+		bytes, _ := ioutil.ReadFile(filename)
+		strContent := bytesToString(bytes)
+
+		if strContent != expectedContent {
+			t.Errorf("In file %s, expecting content:\n%s\n...but got:\n%s", filename, expectedContent, strContent)		
+		}
+	}
 }

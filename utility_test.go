@@ -86,3 +86,20 @@ func (self *mockOutputHandler) GetContentFor(url string) string {
 func ErrorGet(targetUrl string) (*http.Response, error) {
 	return nil, errors.New("Unable to reach server")
 }
+
+func ErrorRead(targetUrl string) (*http.Response, error) {
+	return &http.Response {				
+		Body: &ErrorThrowingReader{},
+	}, nil
+}
+
+type ErrorThrowingReader struct {
+}
+
+func (*ErrorThrowingReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("Connection closed") 		
+}
+
+func (*ErrorThrowingReader) Close() error {
+	return nil
+}

@@ -11,9 +11,11 @@ type Crawler interface {
 
 type CrawlerBuilder interface {
 	WithMaxDepth(depth int) CrawlerBuilder
-	WithFilter(filter func(Crawler, int, string) bool) CrawlerBuilder
-	BuildWithOutputDestination(string) Crawler
-	BuildWithOutputHandler(handler func(Crawler, string, []byte)) Crawler
+	WithFilter(func(crawler Crawler, depth int, url string) bool) CrawlerBuilder
+	WithErrorHandler(func(crawler Crawler, err error, url string)) CrawlerBuilder
+
+	BuildWithOutputDestination(outputDir string) Crawler
+	BuildWithOutputHandler(func(crawler Crawler, url string, content []byte)) Crawler
 }
 
 func NewCrawlerBuilder(url string) CrawlerBuilder {
