@@ -12,7 +12,7 @@ type crawlerBuilderImpl struct {
 	startUrl string
 	requestFactory func(target string) (*http.Response, error)
 	requestFilter func(crawler Crawler, depth int, url string) bool
-	errorHandler func(crawler Crawler, err error, url string)
+	errorHandler func(crawler Crawler, err WebCrawlerError)
 	resultHandler func(crawler Crawler, url string, content []byte)
 	maxDepth int
 }
@@ -27,7 +27,7 @@ func (self *crawlerBuilderImpl) WithFilter(filter func(crawler Crawler, depth in
 	return self	
 }
 
-func (self *crawlerBuilderImpl) WithErrorHandler(errHandler func(crawler Crawler, err error, url string)) CrawlerBuilder {
+func (self *crawlerBuilderImpl) WithErrorHandler(errHandler func(crawler Crawler, err WebCrawlerError)) CrawlerBuilder {
 	self.errorHandler = errHandler
 	return self
 }

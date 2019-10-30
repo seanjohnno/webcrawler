@@ -27,7 +27,32 @@ func Test_ErrorHandlerIsCalledOnReadingResponseBody(t *testing.T) {
 }
 
 func Test_ErrorHandlerIsCalledOnBadUrl(t *testing.T) {
-	// TODO
+	badLink := ":badLink.html"
+	badLinks := strings.Join([]string {
+		"<body>",
+		"<a href='" + badLink  + "'>Bad Link</a>",
+		"</body>",
+	},"\n")
+
+	expectedRequestResponse := map[string]string {
+		indexPageUrl: badLinks,
+	}
+	mockHttpFactory := createMockHttpFactoryWith(expectedRequestResponse)
+
+	var recordedError WebCrawlerError = nil
+	crawlerBuilder := createBuilderWith(mockHttpFactory).
+		WithErrorHandler(func(crawler Crawler, err WebCrawlerError) {
+			recordedError = err
+		}).
+		(*crawlerBuilderImpl)
+		
+	mockOutputHandler := startCrawler(crawlerBuilder)
+
+	test(mockOutputHandler, mockHttpFactory, expectedRequestResponse, t)
+
+	if recordedError == nil {
+		t.Errorf("Expected error for %s", badLink)
+	}
 }
 
 func Test_FilesSavedInCorrectStructure(t *testing.T) {
@@ -232,25 +257,19 @@ func test(mockOutputHandler *mockOutputHandler, httpFactory *mockHttpFactory, ur
 }
 
 func testWithHttpError(httpError func(targetUrl string) (*http.Response, error), t *testing.T) {
-	var savedError error = nil
-	var errUrl string = ""
+	var recordedError WebCrawlerError
 	crawlerBuilder, _ := NewCrawlerBuilder(indexPageUrl).
-		WithErrorHandler(func(crawler Crawler, err error, url string) {
-			savedError = err
-			errUrl = url
+		WithErrorHandler(func(crawler Crawler, err WebCrawlerError) {
+			recordedError = err
 		}).
 		(*crawlerBuilderImpl)
 	crawlerBuilder.requestFactory = httpError
 	
 	startCrawler(crawlerBuilder)
 
-	if savedError == nil {
+	if recordedError == nil {
 		t.Error("Expected to received error")
 	}
-		
-	if errUrl != indexPageUrl {
-		t.Errorf("Expected to see url %s but was %s", indexPageUrl, errUrl)	
-	}	
 }
 
 func bytesToString(bytes []byte) string {

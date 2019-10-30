@@ -8,7 +8,7 @@ import (
 	)
 
 type ScanResult struct {
-	Url *url.URL
+	Url string
 	Error error
 }
 
@@ -45,11 +45,17 @@ func scanWith(regex *regexp.Regexp, content string, currentUrl *url.URL) []*Scan
 	for _, match := range matches {
 		if len(match) > 1 && len(match[1]) > 0 {
 			capturedLink := match[1]
-			combinedUrl, err := currentUrl.Parse(capturedLink)
-			urls = append(urls, &ScanResult {
-				Url: combinedUrl,
-				Error: err,
-			})		
+			if combinedUrl, err := currentUrl.Parse(capturedLink); err == nil {
+				urls = append(urls, &ScanResult {
+					Url: combinedUrl.String(),
+					Error: err,
+				})				
+			} else {
+				urls = append(urls, &ScanResult {
+					Url: capturedLink,
+					Error: err,
+				})
+			}				
 		}
 	}
 	return urls	
