@@ -3,6 +3,7 @@ package webcrawler
 import (
 	"net/http"
 	"fmt"
+	"io"
 )
 
 type Crawler interface {
@@ -16,7 +17,7 @@ type CrawlerBuilder interface {
 	WithErrorHandler(func(crawler Crawler, err WebCrawlerError)) CrawlerBuilder
 
 	BuildWithOutputDestination(outputDir string) Crawler
-	BuildWithOutputHandler(func(crawler Crawler, url string, content []byte)) Crawler
+	BuildWithOutputHandler(func(crawler Crawler, url string, content io.Reader)) Crawler
 }
 
 func NewCrawlerBuilder(url string) CrawlerBuilder {

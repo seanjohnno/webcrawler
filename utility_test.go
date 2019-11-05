@@ -7,6 +7,7 @@ import (
 	"strings"
 	"bytes"
 	"io/ioutil"
+	"io"
 )
 
 type mockHttpFactory struct {
@@ -69,13 +70,14 @@ type mockOutputHandler struct {
 	outputs map[string]string
 }
 
-func (self *mockOutputHandler) HandleOutput(crawler Crawler, url string, contents []byte) {
+func (self *mockOutputHandler) HandleOutput(crawler Crawler, url string, contents io.Reader) {
 	if self.outputs == nil {
 		self.outputs = make(map[string]string)
 	}
 
+	contentAsBytes, _ := ioutil.ReadAll(contents)
 	strBuilder := &strings.Builder {}
-	strBuilder.Write(contents)	
+	strBuilder.Write(contentAsBytes)	
 	self.outputs[url] = strBuilder.String()
 }
 

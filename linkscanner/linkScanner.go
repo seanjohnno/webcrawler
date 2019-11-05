@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"io"
+	"io/ioutil"
 	)
 
 type ScanResult struct {
@@ -12,8 +14,8 @@ type ScanResult struct {
 	Error error
 }
 
-func Scan(responseBody []byte, response *http.Response) []*ScanResult {
-	strResponseBody := bytesToString(responseBody)
+func Scan(responseBody io.Reader, response *http.Response) []*ScanResult {
+	strResponseBody := responseToString(responseBody)
 	mimeType := strings.ToLower(mimeFromResponse(response))
 
 	var regexps []*regexp.Regexp
@@ -69,8 +71,10 @@ func mimeFromResponse(response *http.Response) string {
 	return contentType[0]
 }
 
-func bytesToString(content []byte) string {
+func responseToString(content io.Reader) string {
+	byteContent, _ := ioutil.ReadAll(content)
+	
 	strBuilder := &strings.Builder {}
-	strBuilder.Write(content)
+	strBuilder.Write(byteContent)
 	return strBuilder.String()
 }

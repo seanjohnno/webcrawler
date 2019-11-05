@@ -3,6 +3,7 @@ package webcrawler
 import (
 	"net/http"
 	"net/url"
+	"io"
 	"io/ioutil"
 	"path"
 	"os"
@@ -13,7 +14,7 @@ type crawlerBuilderImpl struct {
 	requestFactory func(target string) (*http.Response, error)
 	requestFilter func(crawler Crawler, depth int, url string) bool
 	errorHandler func(crawler Crawler, err WebCrawlerError)
-	resultHandler func(crawler Crawler, url string, content []byte)
+	resultHandler func(crawler Crawler, url string, content io.Reader)
 	maxDepth int
 }
 
@@ -48,7 +49,7 @@ func (self *crawlerBuilderImpl) BuildWithOutputDestination(destination string) C
 	}
 }
 
-func (self *crawlerBuilderImpl) BuildWithOutputHandler(handler func(crawler Crawler, url string, content []byte)) Crawler {
+func (self *crawlerBuilderImpl) BuildWithOutputHandler(handler func(crawler Crawler, url string, content io.Reader)) Crawler {
 	self.resultHandler = handler
 
 	return &webcrawlerImpl {
@@ -65,7 +66,7 @@ type fileOutputHandler struct {
 	outputDestination string
 }
 
-func (self *fileOutputHandler) ResultHandler(crawler Crawler, rscUrl string, content []byte) {
+func (self *fileOutputHandler) ResultHandler(crawler Crawler, rscUrl string, content io.Reader) {
 	if parsedUrl, err := url.Parse(rscUrl); err == nil {
 		writePath := self.outputDestination + parsedUrl.Path
 		
@@ -74,8 +75,13 @@ func (self *fileOutputHandler) ResultHandler(crawler Crawler, rscUrl string, con
 		if err != nil {
 			// Test	
 		}
+
+		byteContent, err := ioutil.ReadAll(content)
+		if err != nil {
+			// Test
+		}
 		
-		ioutil.WriteFile(writePath, content, 0660)
+		ioutil.WriteFile(writePath, byteContent, 0660)
 	} else {
 		// Test
 	}	

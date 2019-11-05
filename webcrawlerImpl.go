@@ -3,7 +3,9 @@ package webcrawler
 import (
 	"net/http"
 	"io/ioutil"
+	"io"
 	"github.com/seanjohnno/webcrawler/linkscanner"
+	"bytes"
 )
 
 const startDepth int = 0
@@ -13,7 +15,7 @@ type webcrawlerImpl struct {
 	requestFactory func(target string) (*http.Response, error)
 	requestFilter func(crawler Crawler, depth int, url string) bool
 	errorHandler func(crawler Crawler, err WebCrawlerError)
-	resultHandler func(crawler Crawler, url string, content []byte)
+	resultHandler func(crawler Crawler, url string, content io.Reader)
 	maxDepth int
 	
 	fetchedUrls []string
@@ -43,22 +45,27 @@ func (self *webcrawlerImpl) getResource(parentUrl string, url string, depth int)
 		return
 	}
 
-	content, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		self.errorHandler(self, CreateHttpError(parentUrl, url, err))
 		return
 	}
+
+	byteContent, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		self.errorHandler(self, CreateHttpError(parentUrl, url, err))		
+		return
+	}
 	
 	self.fetchedUrls = append(self.fetchedUrls, url)	
-	self.resultHandler(self, url, content)
+	self.resultHandler(self, url, bytes.NewReader(byteContent))
 
 	nextDepth := depth + 1
 	if !self.exceedsMaxDepth(nextDepth) {
-		self.recurse(parentUrl, content, response, nextDepth)	
+		self.recurse(parentUrl, bytes.NewReader(byteContent), response, nextDepth)	
 	}
 }
 
-func (self *webcrawlerImpl) recurse(parentUrl string, responseBody []byte, response *http.Response, depth int) {
+func (self *webcrawlerImpl) recurse(parentUrl string, responseBody io.Reader, response *http.Response, depth int) {
 	scanResults := linkscanner.Scan(responseBody, response)
 	for _, result :=  range scanResults {
 		if result.Error == nil {
