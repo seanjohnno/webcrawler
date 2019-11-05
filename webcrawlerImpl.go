@@ -41,27 +41,28 @@ func (self *webcrawlerImpl) getResource(parentUrl string, url string, depth int)
 	
 	response, err := self.requestFactory(url)
 	if err != nil {
-		self.errorHandler(self, CreateHttpError(parentUrl, url, err))
+		self.errorHandler(self, createHttpError(parentUrl, url, err))
 		return
 	}
 
 	if err != nil {
-		self.errorHandler(self, CreateHttpError(parentUrl, url, err))
+		self.errorHandler(self, createHttpError(parentUrl, url, err))
 		return
 	}
 
-	byteContent, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		self.errorHandler(self, CreateHttpError(parentUrl, url, err))		
-		return
-	}
-	
 	self.fetchedUrls = append(self.fetchedUrls, url)	
-	self.resultHandler(self, url, bytes.NewReader(byteContent))
 
 	nextDepth := depth + 1
-	if !self.exceedsMaxDepth(nextDepth) {
-		self.recurse(parentUrl, bytes.NewReader(byteContent), response, nextDepth)	
+	if linkscanner.CanScan(response) && !self.exceedsMaxDepth(nextDepth) {
+		byteContent, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			self.errorHandler(self, createHttpError(parentUrl, url, err))		
+			return
+		}
+		self.resultHandler(self, url, bytes.NewReader(byteContent))	
+		self.recurse(parentUrl, bytes.NewReader(byteContent), response, nextDepth)			
+	} else {
+		self.resultHandler(self, url, response.Body)				
 	}
 }
 
@@ -71,7 +72,7 @@ func (self *webcrawlerImpl) recurse(parentUrl string, responseBody io.Reader, re
 		if result.Error == nil {
 			self.getResource(parentUrl, result.Url, depth)
 		} else {
-			self.errorHandler(self, CreateUrlParsingError(parentUrl, result.Url, result.Error))
+			self.errorHandler(self, createUrlParsingError(parentUrl, result.Url, result.Error))
 		}
 	}
 }

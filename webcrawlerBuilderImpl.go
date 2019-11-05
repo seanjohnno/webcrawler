@@ -9,6 +9,14 @@ import (
 	"os"
 )
 
+func NewCrawlerBuilder(url string) CrawlerBuilder {
+	return &crawlerBuilderImpl { 
+		startUrl: url,
+		requestFactory: http.Get,
+		maxDepth: -1,
+	}
+}
+
 type crawlerBuilderImpl struct {
 	startUrl string
 	requestFactory func(target string) (*http.Response, error)

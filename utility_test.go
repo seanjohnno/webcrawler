@@ -92,6 +92,9 @@ func ErrorGet(targetUrl string) (*http.Response, error) {
 func ErrorRead(targetUrl string) (*http.Response, error) {
 	return &http.Response {				
 		Body: &ErrorThrowingReader{},
+		Header: map[string][]string {
+			"contentType": []string { "text/html", },		
+		},
 	}, nil
 }
 

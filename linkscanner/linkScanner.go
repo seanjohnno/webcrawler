@@ -14,6 +14,11 @@ type ScanResult struct {
 	Error error
 }
 
+func CanScan(response *http.Response) bool {
+	mimeType := strings.ToLower(mimeFromResponse(response))
+	return mimeType == "text/html" || mimeType == "text/css"
+}
+
 func Scan(responseBody io.Reader, response *http.Response) []*ScanResult {
 	strResponseBody := responseToString(responseBody)
 	mimeType := strings.ToLower(mimeFromResponse(response))
