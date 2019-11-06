@@ -10,6 +10,7 @@ import (
 
 type fileOutputHandler struct {
 	outputDestination string
+	errorHandler func(crawler Crawler, err WebCrawlerError)
 }
 
 func (self *fileOutputHandler) ResultHandler(crawler Crawler, rscUrl string, content io.Reader) {
@@ -29,6 +30,7 @@ func (self *fileOutputHandler) ResultHandler(crawler Crawler, rscUrl string, con
 		
 		ioutil.WriteFile(writePath, byteContent, 0660)
 	} else {
-		// Test
+		crawlerErr := createUrlParsingError("", rscUrl, err)
+		self.errorHandler(crawler, crawlerErr)
 	}	
 }
