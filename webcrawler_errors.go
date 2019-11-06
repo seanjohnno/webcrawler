@@ -39,3 +39,35 @@ type httpGetError struct {
 func (self *httpGetError) Error() string {
 	return fmt.Sprintf("Unable to fetch content at [%s]", self.ErrorFetchingUrl)
 }
+
+func createReadContentError(url string, innerError error) *ReadContentError {
+	return &ReadContentError{
+		Url: url,
+		InnerError: innerError,
+	}
+}
+
+type ReadContentError struct {
+	Url string
+	InnerError error
+} 
+
+func (self *ReadContentError) Error() string {
+	return fmt.Sprintf("Unable to fetch content at [%s]. Inner error: [%v]", self.Url, self.InnerError)
+}
+
+func createMkDirError(url string, innerError error) *MkDirError {
+	return &MkDirError{
+		Url: url,
+		InnerError: innerError,
+	}
+}
+
+type MkDirError struct {
+	Url string
+	InnerError error
+} 
+
+func (self *MkDirError) Error() string {
+	return fmt.Sprintf("Unable to fetch content at [%s]. Inner error: [%v]", self.Url, self.InnerError)
+}
