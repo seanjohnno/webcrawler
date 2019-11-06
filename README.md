@@ -28,14 +28,16 @@ NewCrawlerBuilder("https://urltocrawl.com").
   WithFilter(func(crawler Crawler, depth int, url string) bool {
     // return true to allow, false to ignore
   }).
+  WithErrorHandler(func(crawler Crawler, err WebCrawlerError) {
+	// Handle
+  }).
   BuildWithOutputDestination(/some/output/dir).
   Start()
 ```
 
 ## *TODO
-* Error handling
-* Don't read all bytes into memory if it doesn
-t need to. Perhaps splitting mime logic out from linkscanner i.e. shouldScanForLinks
+* Use a buffer for fileOutputHandler so its not loading all bytes into memory
+* Adding additional links for ctrawler to fetch (use case = retrying errors)
 * Link rewriting for resources not on same domain
 * Add ability to use as command line utility as well as go lib
 * Concurrency
