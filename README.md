@@ -36,8 +36,10 @@ NewCrawlerBuilder("https://urltocrawl.com").
 ```
 
 ## *TODO
-* Use a buffer for fileOutputHandler so its not loading all bytes into memory
-* Adding additional links for ctrawler to fetch (use case = retrying errors)
+* Handle index file (no path)
 * Link rewriting for resources not on same domain
+* - Query params
+* Error retry. Just adding links no good as you lose context (depth, parent)
+* Use a buffer for fileOutputHandler so its not loading all bytes into memory
 * Add ability to use as command line utility as well as go lib
 * Concurrency

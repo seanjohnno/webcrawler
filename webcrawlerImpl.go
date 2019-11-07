@@ -2,6 +2,7 @@ package webcrawler
 
 import (
 	"net/http"
+	"net/url"
 	"io/ioutil"
 	"io"
 	"github.com/seanjohnno/webcrawler/linkscanner"
@@ -17,17 +18,26 @@ type webcrawlerImpl struct {
 	errorHandler func(crawler Crawler, err WebCrawlerError)
 	resultHandler func(crawler Crawler, url string, content io.Reader)
 	maxDepth int
+
+	linkScanner linkscanner.LinkScanner
 	
 	fetchedUrls []string
 	stopped bool
 }
 
-func (self *webcrawlerImpl) Start() {
+func (self *webcrawlerImpl) Start() error {
 	if self.fetchedUrls == nil {
 		self.fetchedUrls = make([]string, 0)	
 	}
+
+	if parsedUrl, err := url.Parse(self.startUrl); err == nil {
+		self.linkScanner = linkscanner.Create(parsedUrl)
+	} else {
+		return err
+	}
 	
 	self.getResource("", self.startUrl, startDepth)
+	return nil
 }
 
 func (self *webcrawlerImpl) Stop() {
@@ -53,7 +63,7 @@ func (self *webcrawlerImpl) getResource(parentUrl string, url string, depth int)
 	self.fetchedUrls = append(self.fetchedUrls, url)	
 
 	nextDepth := depth + 1
-	if linkscanner.CanScan(response) && !self.exceedsMaxDepth(nextDepth) {
+	if self.linkScanner.CanScan(response) && !self.exceedsMaxDepth(nextDepth) {
 		byteContent, err := ioutil.ReadAll(response.Body)
 		if err != nil {
 			self.errorHandler(self, createHttpError(parentUrl, url, err))		
@@ -67,7 +77,7 @@ func (self *webcrawlerImpl) getResource(parentUrl string, url string, depth int)
 }
 
 func (self *webcrawlerImpl) recurse(parentUrl string, responseBody io.Reader, response *http.Response, depth int) {
-	scanResults := linkscanner.Scan(responseBody, response)
+	scanResults := self.linkScanner.Scan(responseBody, response)
 	for _, result :=  range scanResults {
 		if result.Error == nil {
 			self.getResource(parentUrl, result.Url, depth)

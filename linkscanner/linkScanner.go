@@ -14,12 +14,27 @@ type ScanResult struct {
 	Error error
 }
 
-func CanScan(response *http.Response) bool {
+type LinkScanner interface {
+	CanScan(response *http.Response) bool
+	Scan(responseBody io.Reader, response *http.Response) []*ScanResult
+}
+
+func Create(origin *url.URL) LinkScanner {
+	return &linkScannerImpl {
+		originDomain: origin,
+	}
+}
+
+type linkScannerImpl struct {
+	originDomain *url.URL
+}
+
+func (_ *linkScannerImpl) CanScan(response *http.Response) bool {
 	mimeType := strings.ToLower(mimeFromResponse(response))
 	return mimeType == "text/html" || mimeType == "text/css"
 }
 
-func Scan(responseBody io.Reader, response *http.Response) []*ScanResult {
+func (_ *linkScannerImpl) Scan(responseBody io.Reader, response *http.Response) []*ScanResult {
 	strResponseBody := responseToString(responseBody)
 	mimeType := strings.ToLower(mimeFromResponse(response))
 

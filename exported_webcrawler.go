@@ -5,7 +5,7 @@ import (
 )
 
 type Crawler interface {
-	Start()
+	Start() error
 	Stop()
 }
 

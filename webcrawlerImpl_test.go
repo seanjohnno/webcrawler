@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 )
 
@@ -18,6 +19,39 @@ var indexPageContent = strings.Join([]string {
 		"<a href='/subdir/page3.html'>Page 3</a>",
 		"</body>",
 	},"\n")
+
+func Test_LinksInOtherDomainsRewritten(t *testing.T) {
+	tmpDir, err := ioutil.TempDir("", "webcrawlerTest")
+	if err != nil {
+		t.Errorf("Error!! Unable to create temp directory for test. %s", err)
+		return
+	}
+	defer os.Remove(tmpDir)
+
+	bootstrapContent := ".someClass { ... }"
+	expectedRequestResponse := map[string]string {
+		"http://www.test.com/page1.html": "<link href='https://www.bootstrap.com/bootstrap.min.css' rel='stylessheet'>",
+		"https://www.bootstrap.com/bootstrap.min.css": bootstrapContent,
+	}
+	mockHttpFactory := createMockHttpFactoryWith(expectedRequestResponse)
+
+	builder := createBuilderWith(mockHttpFactory)
+	builder.startUrl = "http://www.test.com/page1.html"
+	builder.
+		BuildWithOutputDestination(tmpDir).
+		Start()
+
+	expectedFilePath := path.Join(tmpDir, "www-bootstrap-com/bootstrap.min.css")	
+	if content, err := readFileToString(expectedFilePath); err != nil || content != bootstrapContent {
+		t.Error("Expected to find bootstrap file")
+	}
+
+	expectedContent := "<link href='/www-bootstrap-com/bootstrap.min.css' rel='stylessheet'>" 
+	page1Path := path.Join(tmpDir, "page1.html")	
+	if page1Content, err := readFileToString(page1Path); err != nil || page1Content != expectedContent {
+		t.Error("Expected page1 content to be rewritten")
+	}
+}
 
 func Test_ErrorHandlerIsCalledOnHttpError(t *testing.T) {
 	testWithHttpError(ErrorGet, t)
@@ -270,6 +304,14 @@ func testWithHttpError(httpError func(targetUrl string) (*http.Response, error),
 
 	if recordedError == nil {
 		t.Error("Expected to received error")
+	}
+}
+
+func readFileToString(path string) (string, error) {
+	if content, err := ioutil.ReadFile(path); err == nil {
+		return bytesToString(content), nil
+	} else {
+		return "", err	
 	}
 }
 
