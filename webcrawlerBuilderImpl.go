@@ -1,7 +1,6 @@
 package webcrawler
 
 import (
-	"io"
 	"net/http"
 )
 
@@ -18,7 +17,7 @@ type crawlerBuilderImpl struct {
 	requestFactory func(target string) (*http.Response, error)
 	requestFilter func(crawler Crawler, depth int, url string) bool
 	errorHandler func(crawler Crawler, err WebCrawlerError)
-	resultHandler func(crawler Crawler, url string, content io.Reader)
+	resultHandler func(crawler Crawler, response *http.Response)
 	maxDepth int
 }
 
@@ -53,7 +52,7 @@ func (self *crawlerBuilderImpl) BuildWithOutputDestination(destination string) C
 	}
 }
 
-func (self *crawlerBuilderImpl) BuildWithOutputHandler(handler func(crawler Crawler, url string, content io.Reader)) Crawler {
+func (self *crawlerBuilderImpl) BuildWithOutputHandler(handler func(crawler Crawler, response *http.Response)) Crawler {
 	self.resultHandler = handler
 
 	return &webcrawlerImpl {

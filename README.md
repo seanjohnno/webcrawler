@@ -43,3 +43,10 @@ NewCrawlerBuilder("https://urltocrawl.com").
 * Use a buffer for fileOutputHandler so its not loading all bytes into memory
 * Add ability to use as command line utility as well as go lib
 * Concurrency
+* Pass parent + request around in handlers so they have access to all the info about the request
+
+
+### Reminder
+You're currently changing output handler to take http.Response so fileOutputHandler
+is the thing which will do the url rewriting (normal handlers may not want urls rewritten
+so it should happen in here)

@@ -1,7 +1,7 @@
 package webcrawler
 
 import (
-	"io"
+	"net/http"
 )
 
 type Crawler interface {
@@ -15,7 +15,7 @@ type CrawlerBuilder interface {
 	WithErrorHandler(func(crawler Crawler, err WebCrawlerError)) CrawlerBuilder
 
 	BuildWithOutputDestination(outputDir string) Crawler
-	BuildWithOutputHandler(func(crawler Crawler, url string, content io.Reader)) Crawler
+	BuildWithOutputHandler(func(crawler Crawler, response *http.Response)) Crawler
 }
 
 type WebCrawlerError interface {

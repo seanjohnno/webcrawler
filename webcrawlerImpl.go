@@ -16,7 +16,7 @@ type webcrawlerImpl struct {
 	requestFactory func(target string) (*http.Response, error)
 	requestFilter func(crawler Crawler, depth int, url string) bool
 	errorHandler func(crawler Crawler, err WebCrawlerError)
-	resultHandler func(crawler Crawler, url string, content io.Reader)
+	resultHandler func(crawler Crawler, response *http.Response)
 	maxDepth int
 
 	linkScanner linkscanner.LinkScanner
@@ -69,10 +69,12 @@ func (self *webcrawlerImpl) getResource(parentUrl string, url string, depth int)
 			self.errorHandler(self, createHttpError(parentUrl, url, err))		
 			return
 		}
-		self.resultHandler(self, url, bytes.NewReader(byteContent))	
+
+		response.Body = convertToReaderCloser(bytes.NewReader(byteContent))
+		self.resultHandler(self, response)
 		self.recurse(parentUrl, bytes.NewReader(byteContent), response, nextDepth)			
 	} else {
-		self.resultHandler(self, url, response.Body)				
+		self.resultHandler(self, response)				
 	}
 }
 

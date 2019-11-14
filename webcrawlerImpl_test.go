@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 	"io/ioutil"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -186,7 +185,7 @@ func Test_Stop(t *testing.T) {
 	
 	requestCount := 0	
 	crawler := crawlerBuilder.
-		BuildWithOutputHandler(func(crawler Crawler, url string, content io.Reader) {
+		BuildWithOutputHandler(func(crawler Crawler, response *http.Response) {
 			requestCount++
 			crawler.Stop()	
 		})
