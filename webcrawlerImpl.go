@@ -12,61 +12,56 @@ import (
 const startDepth int = 0
 
 type webcrawlerImpl struct {
-	startUrl string
+	startUrl *url.URL
 	requestFactory func(target string) (*http.Response, error)
-	requestFilter func(crawler Crawler, depth int, url string) bool
+	requestFilter func(crawler Crawler, depth int, url *url.URL) bool
 	errorHandler func(crawler Crawler, err WebCrawlerError)
 	resultHandler func(crawler Crawler, response *http.Response)
 	maxDepth int
 
 	linkScanner linkscanner.LinkScanner
 	
-	fetchedUrls []string
+	fetchedUrls []*url.URL
 	stopped bool
 }
 
-func (self *webcrawlerImpl) Start() error {
+func (self *webcrawlerImpl) Start() {
 	if self.fetchedUrls == nil {
-		self.fetchedUrls = make([]string, 0)	
+		self.fetchedUrls = make([]*url.URL, 0)	
 	}
 
-	if parsedUrl, err := url.Parse(self.startUrl); err == nil {
-		self.linkScanner = linkscanner.Create(parsedUrl)
-	} else {
-		return err
-	}
+	self.linkScanner = linkscanner.Create(self.startUrl)
 	
-	self.getResource("", self.startUrl, startDepth)
-	return nil
+	self.getResource(nil, self.startUrl, startDepth)
 }
 
 func (self *webcrawlerImpl) Stop() {
 	self.stopped = true
 }
 
-func (self *webcrawlerImpl) getResource(parentUrl string, url string, depth int) {
-	if self.stopped || self.shouldFilter(url) || self.isAlreadyFetched(url) {	
+func (self *webcrawlerImpl) getResource(parentUrl *url.URL, rscUrl *url.URL, depth int) {
+	if self.stopped || self.shouldFilter(rscUrl) || self.isAlreadyFetched(rscUrl) {	
 		return
 	}
 	
-	response, err := self.requestFactory(url)
+	response, err := self.requestFactory(rscUrl.String())
 	if err != nil {
-		self.errorHandler(self, createHttpError(parentUrl, url, err))
+		self.errorHandler(self, createHttpError(parentUrl, rscUrl, err))
 		return
 	}
 
 	if err != nil {
-		self.errorHandler(self, createHttpError(parentUrl, url, err))
+		self.errorHandler(self, createHttpError(parentUrl, rscUrl, err))
 		return
 	}
 
-	self.fetchedUrls = append(self.fetchedUrls, url)	
+	self.fetchedUrls = append(self.fetchedUrls, rscUrl)	
 
 	nextDepth := depth + 1
 	if self.linkScanner.CanScan(response) && !self.exceedsMaxDepth(nextDepth) {
 		byteContent, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			self.errorHandler(self, createHttpError(parentUrl, url, err))		
+			self.errorHandler(self, createHttpError(parentUrl, rscUrl, err))		
 			return
 		}
 
@@ -78,7 +73,7 @@ func (self *webcrawlerImpl) getResource(parentUrl string, url string, depth int)
 	}
 }
 
-func (self *webcrawlerImpl) recurse(parentUrl string, responseBody io.Reader, response *http.Response, depth int) {
+func (self *webcrawlerImpl) recurse(parentUrl *url.URL, responseBody io.Reader, response *http.Response, depth int) {
 	scanResults := self.linkScanner.Scan(responseBody, response)
 	for _, result :=  range scanResults {
 		if result.Error == nil {
@@ -93,13 +88,13 @@ func (self *webcrawlerImpl) exceedsMaxDepth(depth int) bool {
 	return !(self.maxDepth == -1 || depth  <= self.maxDepth)
 } 
 
-func (self *webcrawlerImpl) shouldFilter(url string) bool {
+func (self *webcrawlerImpl) shouldFilter(url *url.URL) bool {
 	return self.requestFilter != nil && !self.requestFilter(self, 0, url)
 }
 
-func (self *webcrawlerImpl) isAlreadyFetched(url string) bool {
+func (self *webcrawlerImpl) isAlreadyFetched(url *url.URL) bool {
 	for _, v := range self.fetchedUrls {
-		if v == url {
+		if v.String() == url.String() {
 			return true
 		}
 	}	

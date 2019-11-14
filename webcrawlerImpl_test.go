@@ -3,6 +3,7 @@ package webcrawler
 import (
 	"testing"
 	"net/http"
+	"net/url"
 	"strings"
 	"io/ioutil"
 	"os"
@@ -35,7 +36,8 @@ func Test_LinksInOtherDomainsRewritten(t *testing.T) {
 	mockHttpFactory := createMockHttpFactoryWith(expectedRequestResponse)
 
 	builder := createBuilderWith(mockHttpFactory)
-	builder.startUrl = "http://www.test.com/page1.html"
+	parsedUrl, _ := url.Parse("http://www.test.com/page1.html")
+	builder.startUrl = parsedUrl
 	builder.
 		BuildWithOutputDestination(tmpDir).
 		Start()
@@ -218,8 +220,8 @@ func Test_FilteringUrls(t *testing.T) {
 	}
 	mockHttpFactory := createMockHttpFactoryWith(expectedRequestResponse)
 	crawlerBuilder := createBuilderWith(mockHttpFactory)
-	crawlerBuilder.WithFilter(func(crawler Crawler, depth int, path string) bool {
-		return !strings.Contains(path, "page")		
+	crawlerBuilder.WithFilter(func(crawler Crawler, depth int, path *url.URL) bool {
+		return !strings.Contains(path.String(), "page")		
 	})	
 
 	mockOutputHandler := startCrawler(crawlerBuilder)
@@ -255,7 +257,8 @@ func createMockHttpFactoryWith(expectedRequestResponse map[string]string) *mockH
 }
 
 func createBuilderWith(httpFactory *mockHttpFactory) *crawlerBuilderImpl {			
-	crawlerBuilder, _ := NewCrawlerBuilder(indexPageUrl).(*crawlerBuilderImpl)
+	builderInterface, _ := NewCrawlerBuilder(indexPageUrl)
+	crawlerBuilder, _ := builderInterface.(*crawlerBuilderImpl)
 	crawlerBuilder.requestFactory = httpFactory.Get
 	return crawlerBuilder
 }
@@ -292,7 +295,8 @@ func test(mockOutputHandler *mockOutputHandler, httpFactory *mockHttpFactory, ur
 
 func testWithHttpError(httpError func(targetUrl string) (*http.Response, error), t *testing.T) {
 	var recordedError WebCrawlerError
-	crawlerBuilder, _ := NewCrawlerBuilder(indexPageUrl).
+	crawlerBuilderInterface, _ := NewCrawlerBuilder(indexPageUrl)
+	crawlerBuilder := crawlerBuilderInterface.
 		WithErrorHandler(func(crawler Crawler, err WebCrawlerError) {
 			recordedError = err
 		}).

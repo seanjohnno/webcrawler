@@ -10,7 +10,8 @@ import (
 	)
 
 type ScanResult struct {
-	Url string
+	Match string
+	Url *url.URL
 	Error error
 }
 
@@ -69,12 +70,12 @@ func scanWith(regex *regexp.Regexp, content string, currentUrl *url.URL) []*Scan
 			capturedLink := match[1]
 			if combinedUrl, err := currentUrl.Parse(capturedLink); err == nil {
 				urls = append(urls, &ScanResult {
-					Url: combinedUrl.String(),
-					Error: err,
+					Match: capturedLink,
+					Url: combinedUrl,
 				})				
 			} else {
 				urls = append(urls, &ScanResult {
-					Url: capturedLink,
+					Match: capturedLink,
 					Error: err,
 				})
 			}				

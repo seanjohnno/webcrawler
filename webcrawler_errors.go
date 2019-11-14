@@ -2,19 +2,20 @@ package webcrawler
 
 import (
 	"fmt"
+	"net/url"
 )
 
-func createUrlParsingError(src string, errorUrl string, innerErr error) WebCrawlerError {
+func createUrlParsingError(parentUrl *url.URL, rscUrl *url.URL, innerErr error) WebCrawlerError {
 	return &urlParsingError {
-		SrcUrl: src,
-		BadUrl: errorUrl, 
+		SrcUrl: parentUrl,
+		BadUrl: rscUrl, 
 		InnerError: innerErr,
 	}
 }
 
 type urlParsingError struct {
-	SrcUrl string
-	BadUrl string 
+	SrcUrl *url.URL
+	BadUrl *url.URL
 	InnerError error
 }
 
@@ -22,17 +23,17 @@ func (self *urlParsingError) Error() string {
 	return fmt.Sprintf("Unable to parse url [%s] at source url [%s]", self.BadUrl, self.SrcUrl)
 }
 
-func createHttpError(src string, errorUrl string, innerErr error) WebCrawlerError {
+func createHttpError(parentUrl *url.URL, rscUrl *url.URL, innerErr error) WebCrawlerError {
 	return &httpGetError {
-		SrcUrl: src,
-		ErrorFetchingUrl: errorUrl, 
+		SrcUrl: parentUrl,
+		ErrorFetchingUrl: rscUrl, 
 		InnerError: innerErr,
 	}
 }
 
 type httpGetError struct {
-	SrcUrl string
-	ErrorFetchingUrl string 
+	SrcUrl *url.URL
+	ErrorFetchingUrl *url.URL 
 	InnerError error	
 }
 

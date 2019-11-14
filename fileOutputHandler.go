@@ -5,9 +5,11 @@ import (
 	"path"
 	"os"
 	"net/http"
+	"net/url"
 )
 
 type fileOutputHandler struct {
+	startUrl *url.URL
 	outputDestination string
 	errorHandler func(crawler Crawler, err WebCrawlerError)
 }

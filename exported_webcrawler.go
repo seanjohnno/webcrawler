@@ -2,16 +2,17 @@ package webcrawler
 
 import (
 	"net/http"
+	"net/url"
 )
 
 type Crawler interface {
-	Start() error
+	Start()
 	Stop()
 }
 
 type CrawlerBuilder interface {
 	WithMaxDepth(depth int) CrawlerBuilder
-	WithFilter(func(crawler Crawler, depth int, url string) bool) CrawlerBuilder
+	WithFilter(func(crawler Crawler, depth int, url *url.URL) bool) CrawlerBuilder
 	WithErrorHandler(func(crawler Crawler, err WebCrawlerError)) CrawlerBuilder
 
 	BuildWithOutputDestination(outputDir string) Crawler

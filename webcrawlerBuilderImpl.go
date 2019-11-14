@@ -2,20 +2,25 @@ package webcrawler
 
 import (
 	"net/http"
+	"net/url"
 )
 
-func NewCrawlerBuilder(url string) CrawlerBuilder {
-	return &crawlerBuilderImpl { 
-		startUrl: url,
-		requestFactory: http.Get,
-		maxDepth: -1,
+func NewCrawlerBuilder(startUrl string) (CrawlerBuilder, error) {
+	if parsedUrl, err := url.Parse(startUrl); err != nil {
+		return nil, err
+	} else {
+		return &crawlerBuilderImpl { 
+			startUrl: parsedUrl,
+			requestFactory: http.Get,
+			maxDepth: -1,
+		}, nil
 	}
 }
 
 type crawlerBuilderImpl struct {
-	startUrl string
+	startUrl *url.URL
 	requestFactory func(target string) (*http.Response, error)
-	requestFilter func(crawler Crawler, depth int, url string) bool
+	requestFilter func(crawler Crawler, depth int, url *url.URL) bool
 	errorHandler func(crawler Crawler, err WebCrawlerError)
 	resultHandler func(crawler Crawler, response *http.Response)
 	maxDepth int
@@ -26,7 +31,7 @@ func (self *crawlerBuilderImpl) WithMaxDepth(depth int) CrawlerBuilder {
 	return self	
 }
 
-func (self *crawlerBuilderImpl) WithFilter(filter func(crawler Crawler, depth int, url string) bool) CrawlerBuilder {
+func (self *crawlerBuilderImpl) WithFilter(filter func(crawler Crawler, depth int, url *url.URL) bool) CrawlerBuilder {
 	self.requestFilter = filter
 	return self	
 }
