@@ -44,6 +44,7 @@ func (self *crawlerBuilderImpl) WithErrorHandler(errHandler func(crawler Crawler
 func (self *crawlerBuilderImpl) BuildWithOutputDestination(destination string) Crawler {
 	fileOutputRequestHandler := &fileOutputHandler {
 		outputDestination: destination,
+		startUrl: self.startUrl,
 	}
 	self.resultHandler = fileOutputRequestHandler.ResultHandler 	
 
