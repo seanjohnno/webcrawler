@@ -64,14 +64,14 @@ func (self *fileOutputHandler) ResultHandler(crawler Crawler, response *http.Res
 
 func (self *fileOutputHandler) getWritePath(u *url.URL) string {
 	if self.shouldBeRewritten(u) {
-		return self.rewriteUrl(u)
+		return self.outputDestination + "/" + self.rewriteUrl(u)
 	} else {
 		return self.outputDestination + u.Path
 	}
 }
 
 func (self *fileOutputHandler) rewriteUrl(link *url.URL) string {
-	return strings.ReplaceAll(link.Host, ".", "_") + link.Path  
+	return "/" + strings.ReplaceAll(link.Host, ".", "_") + link.Path  
 }
 
 func (self *fileOutputHandler) shouldBeRewritten(u *url.URL) bool {

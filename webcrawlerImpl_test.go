@@ -42,15 +42,15 @@ func Test_LinksInOtherDomainsRewritten(t *testing.T) {
 		BuildWithOutputDestination(tmpDir).
 		Start()
 
-	expectedFilePath := path.Join(tmpDir, "www-bootstrap-com/bootstrap.min.css")	
+	expectedFilePath := path.Join(tmpDir, "www_bootstrap_com/bootstrap.min.css")	
 	if content, err := readFileToString(expectedFilePath); err != nil || content != bootstrapContent {
 		t.Error("Expected to find bootstrap file")
 	}
 
-	expectedContent := "<link href='/www-bootstrap-com/bootstrap.min.css' rel='stylessheet'>" 
+	expectedContent := "<link href='/www_bootstrap_com/bootstrap.min.css' rel='stylessheet'>" 
 	page1Path := path.Join(tmpDir, "page1.html")	
 	if page1Content, err := readFileToString(page1Path); err != nil || page1Content != expectedContent {
-		t.Error("Expected page1 content to be rewritten")
+		t.Errorf("Expected page1 content to be\n\t%s\n...but was:\n\t%s", expectedContent, page1Content)
 	}
 }
 
