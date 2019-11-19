@@ -21,37 +21,21 @@ var indexPageContent = strings.Join([]string {
 	},"\n")
 
 func Test_LinksInOtherDomainsRewritten(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "webcrawlerTest")
-	if err != nil {
-		t.Errorf("Error!! Unable to create temp directory for test. %s", err)
-		return
-	}
-	defer os.Remove(tmpDir)
-
-	bootstrapContent := ".someClass { ... }"
 	expectedRequestResponse := map[string]string {
 		"http://www.test.com/page1.html": "<link href='https://www.bootstrap.com/bootstrap.min.css' rel='stylessheet'>",
-		"https://www.bootstrap.com/bootstrap.min.css": bootstrapContent,
-	}
-	mockHttpFactory := createMockHttpFactoryWith(expectedRequestResponse)
-
-	builder := createBuilderWith(mockHttpFactory)
-	parsedUrl, _ := url.Parse("http://www.test.com/page1.html")
-	builder.startUrl = parsedUrl
-	builder.
-		BuildWithOutputDestination(tmpDir).
-		Start()
-
-	expectedFilePath := path.Join(tmpDir, "www_bootstrap_com/bootstrap.min.css")	
-	if content, err := readFileToString(expectedFilePath); err != nil || content != bootstrapContent {
-		t.Error("Expected to find bootstrap file")
+		"https://www.bootstrap.com/bootstrap.min.css": ".someClass { ... }",
 	}
 
-	expectedContent := "<link href='/www_bootstrap_com/bootstrap.min.css' rel='stylessheet'>" 
-	page1Path := path.Join(tmpDir, "page1.html")	
-	if page1Content, err := readFileToString(page1Path); err != nil || page1Content != expectedContent {
-		t.Errorf("Expected page1 content to be\n\t%s\n...but was:\n\t%s", expectedContent, page1Content)
+	expectedOutputFiles := map[string]string {
+		"/page1.html": "<link href='/www_bootstrap_com/bootstrap.min.css' rel='stylessheet'>",
+		"www_bootstrap_com/bootstrap.min.css": ".someClass { ... }",
 	}
+
+	testInputGivesExpectedOutputFiles(
+		"http://www.test.com/page1.html",
+		expectedRequestResponse,
+		expectedOutputFiles,
+		t)
 }
 
 func Test_ErrorHandlerIsCalledOnHttpError(t *testing.T) {
@@ -92,12 +76,6 @@ func Test_ErrorHandlerIsCalledOnBadUrl(t *testing.T) {
 }
 
 func Test_FilesSavedInCorrectStructure(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "webcrawlerTest")
-	if err != nil {
-		t.Errorf("Error!! Unable to create temp directory for test. %s", err)
-		return
-	}
-
 	expectedRequestResponse := map[string]string {
 		indexPageUrl: indexPageContent,
 		"http://www.test.com/page1.html": "Page 1",
@@ -105,38 +83,20 @@ func Test_FilesSavedInCorrectStructure(t *testing.T) {
 		"http://www.test.com/subdir/page3.html": "<a href='../page4.html'>Page 4</a>",
 		"http://www.test.com/page4.html": "<a href='/page1.html'>Page 1</a>",
 	}
-	mockHttpFactory := createMockHttpFactoryWith(expectedRequestResponse)
 
-	createBuilderWith(mockHttpFactory).
-		BuildWithOutputDestination(tmpDir).
-		Start()
-
-	expectedFiles := make([]string, 0, len(expectedRequestResponse))
-	for url, expectedContent := range expectedRequestResponse {
-		filename := tmpDir + strings.TrimPrefix(url, "http://www.test.com")
-		expectedFiles = append(expectedFiles, filename)
-		
-		if _, err := os.Stat(filename); os.IsNotExist(err) {
-			t.Errorf("Couldn't find file %s", filename)
-		} else {
-			bytes, _ := ioutil.ReadFile(filename)
-			strContent := bytesToString(bytes)
-
-			if strContent != expectedContent {
-				t.Errorf("In file %s, expecting content:\n%s\n...but got:\n%s", filename, expectedContent, strContent)		
-			}
-		}
+	expectedOutputFiles := map[string]string {
+		"/content.html": indexPageContent,
+		"/page1.html": "Page 1",
+		"/page2.html": "Page 2",
+		"/subdir/page3.html": "<a href='../page4.html'>Page 4</a>",
+		"/page4.html": "<a href='/page1.html'>Page 1</a>",
 	}
 
-	filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
-		filename := tmpDir + strings.TrimPrefix(path, tmpDir)
-		if !info.IsDir() && !contains(expectedFiles, filename) {
-			t.Errorf("Found unexpected file: %s", filename)
-		}
-		return nil
-	})
-
-	os.Remove(tmpDir)	
+	testInputGivesExpectedOutputFiles(
+		indexPageUrl,
+		expectedRequestResponse,
+		expectedOutputFiles,
+		t)
 }
 
 func Test_CssJsFontLinksFetched(t *testing.T)  {
@@ -297,7 +257,7 @@ func testWithHttpError(httpError func(targetUrl string) (*http.Response, error),
 	var recordedError WebCrawlerError
 	crawlerBuilderInterface, _ := NewCrawlerBuilder(indexPageUrl)
 	crawlerBuilder := crawlerBuilderInterface.
-		WithErrorHandler(func(crawler Crawler, err WebCrawlerError) {
+				WithErrorHandler(func(crawler Crawler, err WebCrawlerError) {
 			recordedError = err
 		}).
 		(*crawlerBuilderImpl)
@@ -308,6 +268,49 @@ func testWithHttpError(httpError func(targetUrl string) (*http.Response, error),
 	if recordedError == nil {
 		t.Error("Expected to received error")
 	}
+}
+
+func testInputGivesExpectedOutputFiles(startPage string, input map[string]string, outFiles map[string]string, t *testing.T) {
+	tmpDir, err := ioutil.TempDir("", "webcrawlerTest")
+	if err != nil {
+		t.Errorf("Error!! Unable to create temp directory for test. %s", err)
+		return
+	}
+	defer os.Remove(tmpDir)
+
+	mockHttpFactory := createMockHttpFactoryWith(input)
+
+	builder := createBuilderWith(mockHttpFactory)
+	parsedUrl, _ := url.Parse(startPage)
+	builder.startUrl = parsedUrl
+	builder.
+		BuildWithOutputDestination(tmpDir).
+		Start()
+
+	expectedFiles := make([]string, 0, len(outFiles))
+	for filepath, expectedContent := range outFiles {
+		filepath = path.Join(tmpDir, filepath)
+		expectedFiles = append(expectedFiles, filepath)
+		
+		if _, err := os.Stat(filepath); os.IsNotExist(err) {
+			t.Errorf("Couldn't find file %s", filepath)
+		} else {
+			bytes, _ := ioutil.ReadFile(filepath)
+			strContent := bytesToString(bytes)
+
+			if strContent != expectedContent {
+				t.Errorf("In file %s, expecting content:\n%s\n...but got:\n%s", filepath, expectedContent, strContent)		
+			}
+		}
+	}
+
+	filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
+		filename := tmpDir + strings.TrimPrefix(path, tmpDir)
+		if !info.IsDir() && !contains(expectedFiles, filename) {
+			t.Errorf("Found unexpected file: %s", filename)
+		}
+		return nil
+	})
 }
 
 func readFileToString(path string) (string, error) {
