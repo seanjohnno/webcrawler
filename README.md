@@ -36,15 +36,18 @@ NewCrawlerBuilder("https://urltocrawl.com").
 ```
 
 ## *TODO
-* Handle index file (no path)
-* Link rewriting for resources not on same domain
-* - Query params
 * Error retry. Just adding links no good as you lose context (depth, parent)
 * Use a buffer for fileOutputHandler so its not loading all bytes into memory
 * Add ability to use as command line utility as well as go lib
+	* Greedy grab
+	* Pull/proxy content so you only pull down what you viewed for next time
+	* Host content (localhost)
 * Concurrency
-* Pass parent + request around in handlers so they have access to all the info about the request
+	* + addding a wait time / variable wait time. Makes sense to do this after
+	adding concurreny/goroutines as would only have to re-do
 
+ ## Edges
+ * Fully qualified URL (with host) in link (still need to rewrite parent)
 
 ### Reminder
 You're currently changing output handler to take http.Response so fileOutputHandler
