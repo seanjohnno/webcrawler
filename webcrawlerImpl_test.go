@@ -38,6 +38,24 @@ func Test_LinksInOtherDomainsRewritten(t *testing.T) {
 		t)
 }
 
+func Test_QueryStringsWritten(t *testing.T) {
+	expectedRequestResponse := map[string]string {
+		"http://www.test.com/page1.html?test=one": "<link href='https://www.bootstrap.com/bootstrap.min.css?userId=123' rel='stylessheet'>",
+		"https://www.bootstrap.com/bootstrap.min.css?userId=123": ".someClass { ... }",
+	}
+
+	expectedOutputFiles := map[string]string {
+		"/page1.html?test=one": "<link href='/www_bootstrap_com/bootstrap.min.css?userId=123' rel='stylessheet'>",
+		"www_bootstrap_com/bootstrap.min.css?userId=123": ".someClass { ... }",
+	}
+
+	testInputGivesExpectedOutputFiles(
+		"http://www.test.com/page1.html?test=one",
+		expectedRequestResponse,
+		expectedOutputFiles,
+		t)
+}
+
 func Test_ErrorHandlerIsCalledOnHttpError(t *testing.T) {
 	testWithHttpError(ErrorGet, t)
 }
