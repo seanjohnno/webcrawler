@@ -52,13 +52,15 @@ func NewMockResponse(body string, mimeType string) *http.Response {
 }
 
 func MimeByFilename(filename string) string {
-	if strings.HasSuffix(filename, ".html") {
+	parsedUrl, _ := url.Parse(filename)
+	
+	if strings.HasSuffix(parsedUrl.Path, ".html") {
 		return "text/html"
-	} else if strings.HasSuffix(filename, ".js") {
+	} else if strings.HasSuffix(parsedUrl.Path, ".js") {
 		return "application/javascript"
-	} else if strings.HasSuffix(filename, ".css") {
+	} else if strings.HasSuffix(parsedUrl.Path, ".css") {
 		return "text/css"
-	} else if strings.HasSuffix(filename, ".png") {
+	} else if strings.HasSuffix(parsedUrl.Path, ".png") {
 		return "image/png"
 	} else {
 		return "unknown"

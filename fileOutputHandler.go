@@ -66,12 +66,12 @@ func (self *fileOutputHandler) getWritePath(u *url.URL) string {
 	if self.shouldBeRewritten(u) {
 		return self.outputDestination + "/" + self.rewriteUrl(u)
 	} else {
-		return self.outputDestination + u.Path
+		return self.outputDestination + u.RequestURI()
 	}
 }
 
 func (self *fileOutputHandler) rewriteUrl(link *url.URL) string {
-	return "/" + strings.ReplaceAll(link.Host, ".", "_") + link.Path  
+	return "/" + strings.ReplaceAll(link.Host, ".", "_") + link.RequestURI()  
 }
 
 func (self *fileOutputHandler) shouldBeRewritten(u *url.URL) bool {
