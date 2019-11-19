@@ -20,6 +20,22 @@ var indexPageContent = strings.Join([]string {
 		"</body>",
 	},"\n")
 
+func Test_RootPathDefaultsToIndexDotHtml(t *testing.T) {
+	expectedRequestResponse := map[string]string {
+		"http://www.test.com/": "<div>Hey, I'm the index page</div>",
+	}
+
+	expectedOutputFiles := map[string]string {
+		"/index.html": "<div>Hey, I'm the index page</div>",
+	}
+
+	testInputGivesExpectedOutputFiles(
+		"http://www.test.com/",
+		expectedRequestResponse,
+		expectedOutputFiles,
+		t)
+}
+
 func Test_LinksInOtherDomainsRewritten(t *testing.T) {
 	expectedRequestResponse := map[string]string {
 		"http://www.test.com/page1.html": "<link href='https://www.bootstrap.com/bootstrap.min.css' rel='stylessheet'>",

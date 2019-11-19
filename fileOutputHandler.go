@@ -1,6 +1,8 @@
 package webcrawler
 
 import (
+	"fmt"
+	
 	"io/ioutil"
 	"path"
 	"os"
@@ -63,8 +65,12 @@ func (self *fileOutputHandler) ResultHandler(crawler Crawler, response *http.Res
 }
 
 func (self *fileOutputHandler) getWritePath(u *url.URL) string {
+	fmt.Println(u.Path)
+	
 	if self.shouldBeRewritten(u) {
 		return self.outputDestination + "/" + self.rewriteUrl(u)
+	} else if u.Path == "/" {
+		return self.outputDestination + "/index.html" + u.RawQuery
 	} else {
 		return self.outputDestination + u.RequestURI()
 	}
