@@ -37,11 +37,13 @@ NewCrawlerBuilder("https://urltocrawl.com").
 
 ## *TODO
 * Error retry. Just adding links no good as you lose context (depth, parent)
+	* Could also add a default retry handler (n times) 
 * Use a buffer for fileOutputHandler so its not loading all bytes into memory
 * Add ability to use as command line utility as well as go lib
 	* Greedy grab
 	* Pull/proxy content so you only pull down what you viewed for next time
 	* Host content (localhost)
+* Logging
 * Concurrency
 	* + addding a wait time / variable wait time. Makes sense to do this after
 	adding concurreny/goroutines as would only have to re-do
